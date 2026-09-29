@@ -5,25 +5,25 @@ import pandas as pd
 def parse_staff(raw_str):
     """
     Parse staff name and phone number from a combined raw string.
-    Handles hyphens, extra whitespace, or combined name-phone strings smoothly.
+    Handles standard formats, spaced out mobile numbers, and hyphens smoothly.
     """
     if not raw_str or str(raw_str).lower() == "nan":
         return None, None
 
     clean_str = str(raw_str).strip()
 
-    # Try matching standard Kenyan phone patterns (e.g., 07XXXXXXXX, 01XXXXXXXX, +254...)
-    # This separates trailing phone numbers even if separated only by spaces instead of a hyphen.
-    phone_match = re.search(r'(?:\+?254|0)[17]\d{8}$', clean_str)
+    # Look for Kenyan mobile patterns allowing optional spaces and country codes
+    phone_pattern = r'(?:(?:\+?254|0)[17]\d{2}[\s]?\d{3}[\s]?\d{3}|(?:\+?254|0)[17]\d{8})'
 
-    if phone_match:
-        phone = phone_match.group(0)
-        name = clean_str[:phone_match.start()].strip()
-        # Clean up any leftover hanging hyphens from name splitting
+    match = re.search(phone_pattern, clean_str)
+
+    if match:
+        phone_raw = match.group(0)
+        phone = re.sub(r'\s+', '', phone_raw)
+        name = clean_str[:match.start()].strip()
         name = re.sub(r'[\-_]+$', '', name).strip()
         return (name if name else None), phone
 
-    # Fallback to legacy hyphen split if regex didn't catch a trailing phone
     parts = clean_str.split("-")
     name = parts[0].strip()
     phone = parts[1].strip() if len(parts) > 1 else None
@@ -42,6 +42,37 @@ def parse_date(val):
     except:
         return None
 
+def parse_time(val):
+    """
+    Convert messy time strings (e.g. '11.00am', '2:30 PM') into standard SQL time format ('HH:MM:SS').
+    """
+    if pd.isna(val) or str(val).lower() in ["nan", "none", ""]:
+        return None
+
+    val_str = str(val).strip()
+    try:
+        normalized = val_str.lower().replace('.', ':')
+        dt = pd.to_datetime(normalized, format='%I:%M%p', errors='raise')
+        return dt.strftime('%H:%M:%S')
+    except Exception:
+        try:
+            dt = pd.to_datetime(val_str, errors='raise')
+            return dt.strftime('%H:%M:%S')
+        except Exception:
+            return None
+
+def parse_numeric(val):
+    """
+    Convert raw numeric fields safely to floats/ints.
+    """
+    if pd.isna(val) or str(val).lower() in ["nan", "none", ""]:
+        return None
+    try:
+        cleaned = re.sub(r'[^\d.]', '', str(val))
+        return float(cleaned) if '.' in cleaned else int(cleaned)
+    except:
+        return None
+
 def transform_data(raw_data_dict):
     """
     Takes a dictionary of raw DataFrames and applies cleaning and schema formatting.
@@ -51,7 +82,6 @@ def transform_data(raw_data_dict):
     transformed_data = {}
 
     for basename, df in raw_data_dict.items():
-        # Standardize column names
         df.columns = (
             df.columns.str.strip()
             .str.lower()
@@ -73,7 +103,6 @@ def transform_data(raw_data_dict):
             if pd.isna(channel) or str(channel).lower() == "nan":
                 continue
 
-            # Parse staff fields securely
             tmr_name, tmr_phone = parse_staff(str(row.get("tmr_name_&_tel", "")))
             kdm_name, kdm_phone = parse_staff(str(row.get("kdm_name_&_tel", "")))
             tl_name, tl_phone = parse_staff(str(row.get("team_lead_name_&_tel", "")))
@@ -92,9 +121,11 @@ def transform_data(raw_data_dict):
                 "tl_phone": tl_phone,
                 "recce_date": parse_date(row.get("date_of_recce")),
                 "act_date": parse_date(row.get("date_of_activation")),
-                "kickoff": str(row.get("kick___off_time", "")),
-                "stock": str(row.get("raspberry_stock", "")),
-                "price": str(row.get("raspberry_price_bottle", "")),
+                "kickoff": parse_time(row.get("kick___off_time")),
+                "stock_qty": parse_numeric(row.get("raspberry_stock")),
+                "stock_unit": "cases",
+                "price_can": parse_numeric(row.get("raspberry_price_can")),
+                "price_bottle": parse_numeric(row.get("raspberry_price_bottle")),
                 "comments": str(row.get("comments/insights", "")),
                 "source_file": basename
             }

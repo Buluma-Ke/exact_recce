@@ -1,114 +1,112 @@
+import hashlib
 from sqlalchemy import text
 
-def load_data(engine, transformed_data_dict):
+
+def calculate_file_sha256(file_path):
+    """Calculates the SHA-256 hash of a file for duplicate tracking."""
+    sha256_hash = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for byte_block in f:
+            sha256_hash.update(byte_block)
+    return sha256_hash.hexdigest()
+
+
+def load_data(engine, transformed_data_dict, auto_create_outlets=True):
     """
-    Executes transactional upserts into PostgreSQL based on transformed data.
+    Loads transformed data into staging_activations and calls the database's
+    native ingest_batch stored function.
     """
-    print("\n--- Loading Data into Database ---")
+    print("\n--- Loading Data via Database Staging & Ingest Function ---")
     try:
         with engine.begin() as conn:
             for basename, rows in transformed_data_dict.items():
-                print(f"Loading into DB: {basename}...")
-                for row in rows:
-                    # 1. Upsert Outlet
+                if not rows:
+                    continue
+
+                print(f"Processing batch for file: {basename}...")
+
+                # 1. Register or fetch the import batch
+                # Assuming basename can serve as file_name, compute dummy or real hash if file path is available
+                # Here we compute a pseudo-hash based on content if file path isn't passed directly,
+                # or handle import_batches insertion:
+                file_sha = hashlib.sha256(basename.encode()).hexdigest()
+
+                # Insert into import_batches and get the generated batch id
+                batch_res = conn.execute(
+                    text("""
+                        INSERT INTO import_batches (file_name, file_sha256, rows_total)
+                        VALUES (:file_name, :file_sha, :rows_total)
+                        ON CONFLICT (file_sha256) DO UPDATE SET
+                            imported_at = now()
+                        RETURNING id
+                    """),
+                    {
+                        "file_name": basename,
+                        "file_sha": file_sha,
+                        "rows_total": len(rows),
+                    },
+                )
+                batch_id = batch_res.scalar()
+
+                # 2. Insert rows into staging_activations
+                print(f"Staging {len(rows)} rows for batch ID {batch_id}...")
+                for idx, row in enumerate(rows, start=1):
                     conn.execute(
                         text("""
-                            INSERT INTO outlets (ke_number, outlet_name, physical_location, channel, division)
-                            VALUES (:ke, :name, :loc, :chan, :div)
-                            ON CONFLICT (outlet_name) DO UPDATE SET
-                                ke_number = EXCLUDED.ke_number,
-                                physical_location = EXCLUDED.physical_location,
-                                channel = EXCLUDED.channel,
-                                division = EXCLUDED.division
-                        """),
-                        {
-                            "ke": row["ke_number"],
-                            "name": row["outlet_name"],
-                            "loc": row["physical_location"],
-                            "chan": row["channel"],
-                            "div": row["division"],
-                        },
-                    )
-
-                    outlet_id = conn.execute(
-                        text("SELECT outlet_id FROM outlets WHERE outlet_name = :name"),
-                        {"name": row["outlet_name"]},
-                    ).scalar()
-
-                    # 2. Insert TMR Assignment if present
-                    if row["tmr_name"]:
-                        conn.execute(
-                            text("""
-                                INSERT INTO tmr_assignments (outlet_id, tmr_name, tmr_phone, physical_location, division)
-                                VALUES (:oid, :name, :phone, :loc, :div)
-                                ON CONFLICT DO NOTHING
-                            """),
-                            {
-                                "oid": outlet_id,
-                                "name": row["tmr_name"],
-                                "phone": row["tmr_phone"],
-                                "loc": row["physical_location"],
-                                "div": row["division"],
-                            },
-                        )
-
-                    # 3. Insert KDM Contact if present
-                    if row["kdm_name"]:
-                        existing_kdm = conn.execute(
-                            text("SELECT kdm_id FROM kdm_contacts WHERE outlet_id = :oid AND kdm_name = :name"),
-                            {"oid": outlet_id, "name": row["kdm_name"]},
-                        ).scalar()
-
-                        if not existing_kdm:
-                            conn.execute(
-                                text("""
-                                    INSERT INTO kdm_contacts (outlet_id, kdm_name, kdm_phone, location)
-                                    VALUES (:oid, :name, :phone, :loc)
-                                """),
-                                {
-                                    "oid": outlet_id,
-                                    "name": row["kdm_name"],
-                                    "phone": row["kdm_phone"],
-                                    "loc": row["physical_location"],
-                                },
-                            )
-
-                    # 4. Upsert Recce Visits
-                    conn.execute(
-                        text("""
-                            INSERT INTO recce_visits (
-                                outlet_id, team_lead_name, team_lead_phone, date_of_recce,
-                                date_of_activation, kick_off_time, raspberry_stock,
-                                raspberry_price, comments, source_file
+                            INSERT INTO staging_activations (
+                                batch_id, row_num, ke_number, outlet_name, physical_loc,
+                                channel, division, kdm_name, kdm_phone, tmr_name, tmr_phone,
+                                tl_name, tl_phone, recce_date, activation_date, kickoff_time,
+                                stock_qty, stock_unit, price_can, price_bottle, comments
                             ) VALUES (
-                                :oid, :tl_name, :tl_phone, :recce_date, :act_date,
-                                :kickoff, :stock, :price, :comments, :file
+                                :batch_id, :row_num, :ke_number, :outlet_name, :physical_loc,
+                                :channel, :division, :kdm_name, :kdm_phone, :tmr_name, :tmr_phone,
+                                :tl_name, :tl_phone, :recce_date, :activation_date, :kickoff_time,
+                                :stock_qty, :stock_unit, :price_can, :price_bottle, :comments
                             )
-                            ON CONFLICT (outlet_id, date_of_recce) DO UPDATE SET
-                                team_lead_name = EXCLUDED.team_lead_name,
-                                team_lead_phone = EXCLUDED.team_lead_phone,
-                                date_of_activation = EXCLUDED.date_of_activation,
-                                kick_off_time = EXCLUDED.kick_off_time,
-                                raspberry_stock = EXCLUDED.raspberry_stock,
-                                raspberry_price = EXCLUDED.raspberry_price,
-                                comments = EXCLUDED.comments,
-                                source_file = EXCLUDED.source_file
                         """),
                         {
-                            "oid": outlet_id,
-                            "tl_name": row["tl_name"],
-                            "tl_phone": row["tl_phone"],
-                            "recce_date": row["recce_date"],
-                            "act_date": row["act_date"],
-                            "kickoff": row["kickoff"],
-                            "stock": row["stock"],
-                            "price": row["price"],
-                            "comments": row["comments"],
-                            "file": row["source_file"],
+                            "batch_id": batch_id,
+                            "row_num": idx,
+                            "ke_number": row.get("ke_number"),
+                            "outlet_name": row.get("outlet_name"),
+                            "physical_loc": row.get("physical_location"),
+                            "channel": row.get("channel"),
+                            "division": row.get("division"),
+                            "kdm_name": row.get("kdm_name"),
+                            "kdm_phone": row.get("kdm_phone"),
+                            "tmr_name": row.get("tmr_name"),
+                            "tmr_phone": row.get("tmr_phone"),
+                            "tl_name": row.get("tl_name"),
+                            "tl_phone": row.get("tl_phone"),
+                            "recce_date": row.get("recce_date"),
+                            "activation_date": row.get("act_date"),
+                            "kickoff_time": row.get("kickoff"),
+                            "stock_qty": row.get("stock"),
+                            "stock_unit": row.get("stock_unit", "cases"),
+                            "price_can": row.get("price_can"),
+                            "price_bottle": row.get("price_bottle"),
+                            "comments": row.get("comments"),
                         },
                     )
 
-        print("\nSync and database update completed successfully.")
+                # 3. Call the database ingest_batch function
+                print(
+                    f"Executing database ingest_batch for batch ID {batch_id}..."
+                )
+                result = conn.execute(
+                    text(
+                        "SELECT o_total, o_inserted, o_updated, o_unchanged, o_review FROM ingest_batch(:b_id, :auto_create)"
+                    ),
+                    {"b_id": batch_id, "auto_create": auto_create_outlets},
+                ).fetchone()
+
+                if result:
+                    print(
+                        f"Batch Results -> Total: {result.o_total} | Inserted: {result.o_inserted} | Updated: {result.o_updated} | Unchanged: {result.o_unchanged} | Sent to Review: {result.o_review}"
+                    )
+
+        print("\nSync and database staging ingestion completed successfully.")
         return True
     except Exception as e:
         print(f"\nError encountered during load: {e}")

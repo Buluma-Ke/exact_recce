@@ -9,6 +9,6 @@ def get_db_engine():
 
   password = getpass.getpass("Enter your PostgreSQL password: ")
   db_uri = (
-      f"postgresql+psycopg2://Admin:{password}@localhost:5432/exact_experience"
+      f"postgresql+psycopg2://Admin:{password}@localhost:5432/exact_recce"
   )
   return create_engine(db_uri)
