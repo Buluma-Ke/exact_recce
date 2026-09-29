@@ -4,7 +4,8 @@ from sqlalchemy import text
 
 def print_all_outlets_summary(engine):
     """
-    Query 1: Retrieve and print all outlets with their latest associated contacts and team lead.
+    Query 1: Retrieve and print all outlets with their latest associated contacts,
+    team lead, and KDM phone number.
     """
     query = """
         SELECT
@@ -12,6 +13,8 @@ def print_all_outlets_summary(engine):
             name AS outlet_name,
             physical_loc AS physical_location,
             ke_number,
+            channel,
+            division,
             kdm_name,
             kdm_phone,
             tmr_name,
@@ -30,87 +33,81 @@ def print_all_outlets_summary(engine):
         print(f"\n--- All Outlets Summary ({len(df)} records) ---")
         print(df.to_string(index=False))
 
-
 def print_activated_last_two_weeks(engine):
     """
-    Query 2: Retrieve and print outlets activated within the last 14 days (excluding outlet_id).
+    Option 2: View outlets activated in the last 2 weeks (Nairobi only).
     """
     query = """
         SELECT
-            name AS outlet_name,
-            physical_loc AS physical_location,
+            outlet_name,
+            location,
             ke_number,
             channel,
-            division,
-            last_activated,
+            days_since_last_activation,
             kdm_name,
             kdm_phone,
             tmr_name,
             tmr_phone,
-            latest_comments
+            tl_name
         FROM v_outlets_recently_activated
-        ORDER BY last_activated DESC
     """
     with engine.connect() as conn:
         df = pd.read_sql(text(query), conn)
 
     if df.empty:
-        print("\nNo outlets activated in the last 2 weeks.")
+        print("\nNo recently activated Nairobi records found.")
     else:
-        print(f"\n--- Outlets Activated in the Last 2 Weeks ({len(df)} records) ---")
+        print(f"\n--- Nairobi Outlets Activated in Last 2 Weeks ({len(df)} records) ---")
         print(df.to_string(index=False))
 
 
 def print_inactive_two_weeks(engine):
     """
-    Query 3: Retrieve and print outlets unactivated for 14 days or longer.
+    Option 3: View outlets inactive for >= 2 weeks (Nairobi only).
     """
     query = """
         SELECT
-            outlet_id,
-            name AS outlet_name,
-            physical_loc AS physical_location,
+            outlet_name,
+            location,
             ke_number,
             channel,
-            division,
-            last_activated,
             days_since_last_activation,
+            kdm_name,
+            kdm_phone,
             tmr_name,
-            tmr_phone
+            tmr_phone,
+            tl_name
         FROM v_outlets_inactive_2w
-        ORDER BY outlet_id
     """
     with engine.connect() as conn:
         df = pd.read_sql(text(query), conn)
 
     if df.empty:
-        print("\nNo matching outlets found.")
+        print("\nNo inactive Nairobi records found.")
     else:
-        print(f"\n--- Outlets Inactive for >= 2 Weeks / No Activation ({len(df)} records) ---")
+        print(f"\n--- Nairobi Outlets Inactive for >= 2 Weeks ({len(df)} records) ---")
         print(df.to_string(index=False))
 
 
 def print_tmr_locations(engine):
     """
-    Query 4: Retrieve and print TMR names, contact numbers, associated locations, and assigned outlets.
+    Query 4: Retrieve and print TMR associated locations, outlets, and activation counts.
     """
     query = """
         SELECT
             tmr_name,
             tmr_phone,
-            STRING_AGG(DISTINCT physical_loc, ', ') AS associated_locations,
-            STRING_AGG(DISTINCT outlet_name, ', ') AS assigned_outlets,
-            SUM(activations) AS total_activations
+            physical_loc AS location,
+            outlet_name,
+            activations
         FROM v_tmr_locations
-        WHERE tmr_name IS NOT NULL
-        GROUP BY tmr_name, tmr_phone
-        ORDER BY tmr_name
+        ORDER BY tmr_name, physical_loc
     """
     with engine.connect() as conn:
         df = pd.read_sql(text(query), conn)
 
     if df.empty:
-        print("\nNo TMR records found.")
+        print("\nNo TMR location records found.")
     else:
         print(f"\n--- TMR Associated Locations & Outlets ({len(df)} records) ---")
         print(df.to_string(index=False))
