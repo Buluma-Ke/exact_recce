@@ -1,4 +1,4 @@
-# Beverage Recce Database CLI
+# Recce Database CLI
 
 A modular Python command-line tool for parsing, cleaning, and ingesting beverage recce reports from Excel into a PostgreSQL database, complete with advanced analytical reporting.
 
@@ -22,8 +22,10 @@ excat_experience/
 ## Installation & Setup
 
 1.  Clone the repository and navigate to the project folder:
+```text
     `Bash`
      `cd exact_experience`
+```
 
 2.  Create and activate a virtual environment:
     `Bash`
