@@ -1,5 +1,5 @@
 from connections import get_db_engine
-from etl.load import load_data  # or import run_ingestion depending on your entry function name
+from etl.load import load_data 
 from queries import (
     print_activated_last_two_weeks,
     print_all_outlets_summary,

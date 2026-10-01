@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} - Recce{% endblock %}
+{% block content %}
+  <div class="head">
+    <h1>{{ title }}</h1>
+    <span class="count">{{ rows|length }} records</span>
+    {% if rows %}<input id="filter" type="search" placeholder="Filter rows" aria-label="Filter rows">{% endif %}
+  </div>
+  {% if rows %}
+  <div class="wrap">
+    <table id="data">
+      <thead><tr>{% for c in columns %}<th>{{ c.replace('_', ' ').capitalize() }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for r in rows %}<tr>{% for v in r %}<td>{{ v }}</td>{% endfor %}</tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <script>
+    const f = document.getElementById("filter");
+    f.addEventListener("input", () => {
+      const q = f.value.toLowerCase();
+      document.querySelectorAll("#data tbody tr").forEach(tr => {
+        tr.hidden = !tr.textContent.toLowerCase().includes(q);
+      });
+    });
+  </script>
+  {% else %}
+  <p class="empty">{{ empty_msg }}</p>
+  {% endif %}
+{% endblock %}
