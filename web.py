@@ -1,3 +1,7 @@
+import os
+import threading
+import webbrowser
+
 from flask import Flask, flash, redirect, render_template, url_for, abort
 
 import queries
@@ -56,6 +60,24 @@ def sync():
     return redirect(url_for("report", slug="outlets"))
 
 
+URL = "http://127.0.0.1:5000"
+CHROME_PATHS = [
+    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+]
+
+
+def open_browser():
+    """Open the app in Chrome if it is installed, otherwise in the default browser."""
+    for path in CHROME_PATHS:
+        if os.path.exists(path):
+            webbrowser.register("chrome", None, webbrowser.BackgroundBrowser(path))
+            webbrowser.get("chrome").open(URL)
+            return
+    webbrowser.open(URL)
+
+
 if __name__ == "__main__":
     engine = get_db_engine()  # prompts for the password once, in the terminal
+    threading.Timer(1.0, open_browser).start()  # wait a moment for the server to start
     app.run(debug=False, port=5000)
