@@ -21,6 +21,11 @@ REPORTS = {
             "No TMR location records found."),
 }
 
+# Columns fetched by the queries but not shown on a given page
+HIDDEN_COLUMNS = {
+    "outlets": ["outlet_id", "latest_comments"],
+}
+
 
 @app.route("/")
 def index():
@@ -32,7 +37,7 @@ def report(slug):
     if slug not in REPORTS:
         abort(404)
     title, fetch, empty_msg = REPORTS[slug]
-    df = fetch(engine).fillna("")
+    df = fetch(engine).drop(columns=HIDDEN_COLUMNS.get(slug, [])).fillna("")
     return render_template(
         "report.html", slug=slug, title=title, empty_msg=empty_msg,
         reports=REPORTS, columns=list(df.columns), rows=df.values.tolist(),
