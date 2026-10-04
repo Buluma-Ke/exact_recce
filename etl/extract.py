@@ -21,7 +21,12 @@ def extract_excel_files():
         basename = os.path.basename(filename)
         print(f"Extracting: {basename}...")
         try:
-            df = pd.read_excel(filename)
+            try:
+                df = pd.read_excel(filename)
+            except ValueError:
+                # openpyxl rejects some files with a damaged stylesheet;
+                # calamine ignores styles, so it can still read the data.
+                df = pd.read_excel(filename, engine="calamine")
             extracted_data[basename] = df
         except Exception as e:
             print(f"Error reading {basename}: {e}")
