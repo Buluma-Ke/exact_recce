@@ -121,6 +121,13 @@ def _fix_year(d, anchor):
             return alt
     return d
 
+def clean_ke(val):
+    s = clean_text(val)
+    if not s:
+        return None
+    s = re.sub(r"\s+", "", s).upper()
+    return s if re.fullmatch(r"KE\d+", s) else None
+
 
 def parse_date(val, anchor=None):
     """
@@ -165,6 +172,14 @@ def parse_time(val):
             return dt.strftime('%H:%M:%S')
         except Exception:
             return None
+
+def clean_text(val):
+    """Blank cells arrive as NaN; store them as None rather than the text 'NaN'."""
+    if val is None or pd.isna(val):
+        return None
+    text = str(val).strip()
+    return text if text and text.lower() not in ("nan", "none") else None
+
 
 def parse_numeric(val):
     """
@@ -225,11 +240,11 @@ def transform_data(raw_data_dict):
             tl_name, tl_phone = parse_staff(str(row.get("team_lead_name_&_tel", "")))
 
             row_dict = {
-                "ke_number": row.get("ke_number"),
+                "ke_number": clean_ke(row.get("ke_number")),
                 "outlet_name": outlet_name_str,
-                "physical_location": row.get("physical_location"),
+                "physical_location": clean_text(row.get("physical_location")),
                 "channel": channel,
-                "division": row.get("division"),
+                "division": clean_text(row.get("division")),
                 "tmr_name": tmr_name,
                 "tmr_phone": tmr_phone,
                 "kdm_name": kdm_name,
@@ -243,7 +258,7 @@ def transform_data(raw_data_dict):
                 "stock_unit": "cases",
                 "price_can": parse_numeric(row.get("raspberry_price_can")),
                 "price_bottle": parse_numeric(row.get("raspberry_price_bottle")),
-                "comments": str(row.get("comments/insights", "")),
+                "comments": clean_text(row.get("comments/insights")),
                 "source_file": basename
             }
             cleaned_rows.append(row_dict)
