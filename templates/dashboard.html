@@ -18,7 +18,7 @@
 {% block content %}
   <div class="head">
     <h1>Dashboard</h1>
-    <span class="count">{% if last_sync %}Last sync {{ last_sync }}{% else %}No reports synced yet{% endif %}</span>
+    <span class="count">{% if last_sync %}Last import {{ last_sync }}{% else %}No reports imported yet{% endif %}</span>
   </div>
 
   <section class="stats">
@@ -61,12 +61,12 @@
     </section>
 
     <section class="panel">
-      <h2>Recent syncs</h2>
+      <h2>Recent imports</h2>
       <ul class="list">
         {% for s in syncs %}
         <li><span>{{ s.file }}<span class="sub">{{ s.when }}</span></span><span class="r">{{ s.ins }} new, {{ s.upd }} updated</span></li>
         {% else %}
-        <li class="muted">Nothing synced yet.</li>
+        <li class="muted">Nothing imported yet.</li>
         {% endfor %}
       </ul>
     </section>

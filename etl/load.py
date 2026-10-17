@@ -11,10 +11,14 @@ def calculate_file_sha256(file_path):
     return sha256_hash.hexdigest()
 
 
-def load_data(engine, transformed_data_dict, auto_create_outlets=True):
+def load_data(engine, transformed_data_dict, auto_create_outlets=True, file_hashes=None):
     """
     Loads transformed data into staging_activations and calls the database's
     native ingest_batch stored function.
+
+    file_hashes: optional {filename: sha256 of the file's contents}. When given, a
+    changed version of a file gets its own import batch and a byte-identical one is
+    recognised. Without it, the batch is keyed on the file name alone (folder sync).
     """
     print("\n--- Loading Data via Database Staging & Ingest Function ---")
     try:
@@ -29,7 +33,7 @@ def load_data(engine, transformed_data_dict, auto_create_outlets=True):
                 # Assuming basename can serve as file_name, compute dummy or real hash if file path is available
                 # Here we compute a pseudo-hash based on content if file path isn't passed directly,
                 # or handle import_batches insertion:
-                file_sha = hashlib.sha256(basename.encode()).hexdigest()
+                file_sha = (file_hashes or {}).get(basename) or hashlib.sha256(basename.encode()).hexdigest()
 
                 # Insert into import_batches and get the generated batch id
                 batch_res = conn.execute(
