@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Recce{% endblock %}
+
+{% macro breakdown(title, items, note) %}
+  <section class="panel">
+    <h2>{{ title }}<span>{{ note }}</span></h2>
+    {% for it in items %}
+      <div class="brow">
+        <div class="top"><span>{{ it.name }}</span><em>{{ it.active }} active / {{ it.total }} outlets</em></div>
+        <div class="track"><div class="fill" style="width: {{ it.pct }}%"></div></div>
+      </div>
+    {% else %}
+      <p class="muted">No data yet.</p>
+    {% endfor %}
+  </section>
+{% endmacro %}
+
+{% block content %}
+  <div class="head">
+    <h1>Dashboard</h1>
+    <span class="count">{% if last_sync %}Last sync {{ last_sync }}{% else %}No reports synced yet{% endif %}</span>
+  </div>
+
+  <section class="stats">
+    <div class="card"><div class="k">Total outlets</div><div class="v">{{ k.total }}</div><div class="s">{{ k.channels }} channels, {{ k.regions }} regions</div></div>
+    <div class="card"><div class="k">Activated, last 7 days</div><div class="v">{{ k.active7 }}</div><div class="s">{{ k.acts7 }} activation{{ '' if k.acts7 == 1 else 's' }}</div></div>
+    <div class="card"><div class="k">Activated, last 2 weeks</div><div class="v">{{ k.active14 }}</div><div class="s">{{ k.active14_pct }}% of all outlets</div></div>
+    <div class="card"><div class="k">Inactive 2 weeks or more</div><div class="v warn">{{ k.inactive }}</div><div class="s">{{ k.never }} never activated</div></div>
+    <div class="card"><div class="k">Planned ahead</div><div class="v">{{ k.planned }}</div><div class="s">{% if k.next_date %}next on {{ k.next_date }}{% else %}nothing scheduled{% endif %}</div></div>
+    <div class="card"><div class="k">Rows needing review</div><div class="v {{ 'warn' if review else '' }}">{{ review }}</div><div class="s">{{ 'no date or unmatched outlet' if review else 'all rows imported' }}</div></div>
+  </section>
+
+  <div class="grid2">
+    {{ breakdown('Outlets by channel', channels, 'active = activated in last 2 weeks') }}
+    {{ breakdown('Outlets by region', regions, 'active = activated in last 2 weeks') }}
+  </div>
+
+  <div class="grid3">
+    <section class="panel">
+      <h2>Activations per week<span>last 8 weeks</span></h2>
+      <div class="weeks">
+        {% for w in weeks %}
+        <div class="week" title="{{ w.count }} activations, week of {{ w.label }}">
+          <span class="n">{{ w.count }}</span>
+          <div class="bar" style="height: {{ w.pct }}%"></div>
+          <span class="d">{{ w.label }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Top TMRs<span>last 30 days</span></h2>
+      <ul class="list">
+        {% for t in tmrs %}
+        <li><span>{{ t.name }}<span class="sub">{{ t.outlets }} outlet{{ '' if t.outlets == 1 else 's' }}</span></span><span class="r">{{ t.n }} activation{{ '' if t.n == 1 else 's' }}</span></li>
+        {% else %}
+        <li class="muted">No activations in the last 30 days.</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Recent syncs</h2>
+      <ul class="list">
+        {% for s in syncs %}
+        <li><span>{{ s.file }}<span class="sub">{{ s.when }}</span></span><span class="r">{{ s.ins }} new, {{ s.upd }} updated</span></li>
+        {% else %}
+        <li class="muted">Nothing synced yet.</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+{% endblock %}

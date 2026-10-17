@@ -6,6 +6,7 @@ from flask import Flask, flash, redirect, render_template, url_for, abort
 
 import queries
 from connections import get_db_engine
+from dashboard import get_dashboard_data
 from etl.extract import extract_excel_files
 from etl.load import load_data
 from etl.transform import transform_data
@@ -32,8 +33,10 @@ HIDDEN_COLUMNS = {
 
 
 @app.route("/")
-def index():
-    return redirect(url_for("report", slug="outlets"))
+def dashboard():
+    return render_template(
+        "dashboard.html", slug=None, reports=REPORTS, **get_dashboard_data(engine)
+    )
 
 
 @app.route("/<slug>")
@@ -57,7 +60,7 @@ def sync():
         flash(f"Sync complete: {len(raw)} file(s) processed.", "ok")
     else:
         flash("Sync failed and was rolled back. Check the terminal for details.", "error")
-    return redirect(url_for("report", slug="outlets"))
+    return redirect(url_for("dashboard"))
 
 
 URL = "http://127.0.0.1:5000"

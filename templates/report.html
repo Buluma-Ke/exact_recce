@@ -11,7 +11,7 @@
     <table id="data">
       <thead><tr>{% for c in columns %}<th>{{ c.replace('_', ' ').capitalize() }}</th>{% endfor %}</tr></thead>
       <tbody>
-        {% for r in rows %}<tr>{% for v in r %}<td>{{ v }}</td>{% endfor %}</tr>{% endfor %}
+        {% for r in rows %}<tr>{% for v in r %}<td>{{ '' if v is none else v }}</td>{% endfor %}</tr>{% endfor %}
       </tbody>
     </table>
   </div>
