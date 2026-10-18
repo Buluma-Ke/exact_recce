@@ -120,4 +120,6 @@ def open_browser():
 if __name__ == "__main__":
     engine = get_db_engine()  # prompts for the password once, in the terminal
     threading.Timer(1.0, open_browser).start()  # wait a moment for the server to start
-    app.run(debug=False, port=5000)
+    # host="0.0.0.0" lets other devices reach the app (your phone, over Tailscale).
+    # Keep the Windows Firewall rule limited to Tailscale addresses (see setup steps).
+    app.run(debug=False, host="0.0.0.0", port=5000)
