@@ -60,6 +60,7 @@ svg.i {
 .content {
     flex:1;
     min-width:0;
+    overflow-x:clip;
     padding:1.25rem 1.5rem 2rem;
 }
 
@@ -283,6 +284,11 @@ tbody tr:hover {
     gap:.75rem;
     margin-bottom:.75rem;
 }
+.stats > *,
+.grid2 > *,
+.grid3 > * {
+    min-width:0;
+}
 .card,
 .panel {
     background:var(--panel);
@@ -317,10 +323,10 @@ tbody tr:hover {
     margin-bottom:.75rem;
 }
 .grid2 {
-    grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns:repeat(auto-fit, minmax(min(320px, 100%), 1fr));
 }
 .grid3 {
-    grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns:repeat(auto-fit, minmax(min(300px, 100%), 1fr));
 }
 .panel h2 {
     margin:0 0 .8rem;
@@ -404,6 +410,17 @@ tbody tr:hover {
 }
 .list li:last-child {
     border-bottom:0;
+}
+.list li > span:first-child {
+    min-width:0;
+    overflow-wrap:anywhere;
+}
+.list li.stack {
+    display:block;
+}
+.list .name {
+    display:block;
+    overflow-wrap:anywhere;
 }
 .list .sub {
     display:block;

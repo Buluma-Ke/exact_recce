@@ -15,12 +15,15 @@ def _rows(engine, sql):
         return []
 
 
+KNOWN_LABELS = {"ontrade": "Ontrade", "offtrade": "Offtrade", "tht": "THT"}
+
+
 def _label(value):
-    """Excel has 'ontrade', 'Ontrade', 'THT ', so group case-insensitively."""
-    v = (value or "").strip()
+    """Excel has 'ontrade', 'Ontrade', 'Off trade', 'THT ', so ignore case and spaces."""
+    v = " ".join((value or "").split())
     if not v:
         return "Unknown"
-    return v.upper() if v.upper() == "THT" else v.capitalize()
+    return KNOWN_LABELS.get(v.replace(" ", "").lower(), v.title())
 
 
 def _breakdown(outlets, field):
@@ -102,11 +105,11 @@ def get_dashboard_data(engine):
     for w in weeks:
         w["pct"] = round(100 * w["count"] / peak)
 
-    tmrs = [
+    tls = [
         {"name": r.name, "n": r.n, "outlets": r.outlets}
         for r in _rows(engine, f"""
             SELECT s.name, count(*) AS n, count(DISTINCT a.outlet_id) AS outlets
-            FROM activations a JOIN staff s ON s.id = a.tmr_id
+            FROM activations a JOIN staff s ON s.id = a.team_lead_id
             WHERE a.activation_date BETWEEN {TODAY_SQL} - 30 AND {TODAY_SQL}
               AND lower(s.name) <> 'none'
             GROUP BY s.id, s.name ORDER BY n DESC, s.name LIMIT 5
@@ -126,7 +129,7 @@ def get_dashboard_data(engine):
 
     return {
         "k": k, "channels": channels, "regions": regions, "weeks": weeks,
-        "tmrs": tmrs, "syncs": syncs,
+        "tls": tls, "syncs": syncs,
         "review": review[0][0] if review else 0,
         "last_sync": syncs[0]["when"] if syncs else None,
     }

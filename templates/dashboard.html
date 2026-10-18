@@ -50,9 +50,9 @@
     </section>
 
     <section class="panel">
-      <h2>Top TMRs<span>last 30 days</span></h2>
+      <h2>Top team leads<span>last 30 days</span></h2>
       <ul class="list">
-        {% for t in tmrs %}
+        {% for t in tls %}
         <li><span>{{ t.name }}<span class="sub">{{ t.outlets }} outlet{{ '' if t.outlets == 1 else 's' }}</span></span><span class="r">{{ t.n }} activation{{ '' if t.n == 1 else 's' }}</span></li>
         {% else %}
         <li class="muted">No activations in the last 30 days.</li>
@@ -64,7 +64,7 @@
       <h2>Recent imports</h2>
       <ul class="list">
         {% for s in syncs %}
-        <li><span>{{ s.file }}<span class="sub">{{ s.when }}</span></span><span class="r">{{ s.ins }} new, {{ s.upd }} updated</span></li>
+        <li class="stack"><span class="name">{{ s.file }}</span><span class="sub">{{ s.when }} &middot; {{ s.ins }} new, {{ s.upd }} updated</span></li>
         {% else %}
         <li class="muted">Nothing imported yet.</li>
         {% endfor %}
