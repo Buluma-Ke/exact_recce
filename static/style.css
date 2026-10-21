@@ -221,6 +221,33 @@ h1 {
     border-radius:6px;
     font:inherit;
 }
+.filters {
+    margin-left:auto;
+    display:flex;
+    flex-wrap:wrap;
+    gap:.5rem;
+}
+.filters #filter {
+    margin-left:0;
+}
+.filters select {
+    padding:.45rem .7rem;
+    background:var(--bg);
+    color:var(--text);
+    border:1px solid #3a3940;
+    border-radius:6px;
+    font:inherit;
+    color-scheme:dark;
+}
+.filters select:hover {
+    border-color:var(--accent);
+}
+.filters select:required:invalid {
+    color:var(--faint);
+}
+.filters select option {
+    color:var(--text);
+}
 #filter::placeholder {
     color:var(--faint);
 }

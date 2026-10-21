@@ -36,6 +36,9 @@ REPORTS = {
             "No TMR location records found."),
 }
 
+# Pages that get the channel and division drop-down filters
+FILTERABLE = ("outlets", "activated", "inactive")
+
 # Columns fetched by the queries but not shown on a given page
 HIDDEN_COLUMNS = {
     "outlets": ["outlet_id", "latest_comments"],
@@ -143,7 +146,7 @@ def report(slug):
     return render_template(
         "report.html", slug=slug, title=title, empty_msg=empty_msg,
         reports=REPORTS, columns=list(df.columns), rows=df.values.tolist(),
-        edit_ids=edit_ids,
+        edit_ids=edit_ids, filters=slug in FILTERABLE,
     )
 
 
