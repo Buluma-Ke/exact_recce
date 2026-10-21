@@ -89,6 +89,7 @@ svg.i {
     white-space:nowrap;
 }
 .icon-btn {
+    position:relative;
     background:none;
     border:0;
     color:var(--muted);
@@ -172,29 +173,33 @@ input:focus-visible {
     outline-offset:2px;
 }
 
-/* collapsed sidebar */
-html.collapsed .sidebar {
-    width:var(--side-w-collapsed);
+/* collapsed sidebar (desktop only; phones use the slide-in menu) */
+@media (min-width: 761px) {
+    html.collapsed .sidebar {
+        width:var(--side-w-collapsed);
+    }
+    html.collapsed .brand,
+    html.collapsed .side-label,
+    html.collapsed .label {
+        display:none;
+    }
+    html.collapsed .side-top {
+        flex-direction:column;
+        padding-bottom:.75rem;
+    }
+    html.collapsed .nav-item,
+    html.collapsed .btn {
+        justify-content:center;
+        padding-left:0;
+        padding-right:0;
+    }
+    html.collapsed .side-nav {
+        margin-top:.75rem;
+    }
+    html.collapsed .badge {
+        display:none;
+    }
 }
-html.collapsed .brand,
-html.collapsed .side-label,
-html.collapsed .label {
-    display:none;
-}
-html.collapsed .side-top {
-    flex-direction:column;
-    padding-bottom:.75rem;
-}
-html.collapsed .nav-item,
-html.collapsed .btn {
-    justify-content:center;
-    padding-left:0;
-    padding-right:0;
-}
-html.collapsed .side-nav {
-    margin-top:.75rem;
-}
-
 /* ---------- page header ---------- */
 .head {
     display:flex;
@@ -474,9 +479,6 @@ tbody tr:hover {
     font-weight:700;
     line-height:1.5;
 }
-html.collapsed .badge {
-    display:none;
-}
 a.edit {
     color:var(--accent);
     text-decoration:none;
@@ -628,5 +630,74 @@ form.inline input[type="date"] {
     select,
     textarea {
         font-size:16px;
+    }
+}
+
+/* ---------- phone: menu hidden until you tap the button ---------- */
+.mobile-bar,
+.scrim,
+.i-narrow {
+    display:none;
+}
+.dot {
+    position:absolute;
+    top:3px;
+    right:3px;
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:var(--warn);
+}
+
+@media (max-width: 760px) {
+    .mobile-bar {
+        display:flex;
+        align-items:center;
+        gap:.6rem;
+        position:sticky;
+        top:0;
+        z-index:20;
+        padding:.45rem .75rem;
+        background:var(--side);
+    }
+    .mobile-bar .brand {
+        flex:none;
+    }
+    .sidebar {
+        position:fixed;
+        top:0;
+        left:0;
+        z-index:40;
+        width:min(260px, 84vw);
+        height:100vh;
+        height:100dvh;
+        overflow-y:auto;
+        transform:translateX(-100%);
+        transition:transform .2s ease;
+    }
+    html.nav-open .sidebar {
+        transform:none;
+    }
+    html.nav-open .scrim {
+        display:block;
+        position:fixed;
+        top:0;
+        right:0;
+        bottom:0;
+        left:0;
+        z-index:30;
+        background:rgba(0, 0, 0, .55);
+    }
+    html.nav-open body {
+        overflow:hidden;
+    }
+    .i-wide {
+        display:none;
+    }
+    .i-narrow {
+        display:inline;
+    }
+    .content {
+        padding:.9rem .85rem 2rem;
     }
 }

@@ -4,6 +4,8 @@
   {%- elif name == 'table' %}<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/>
   {%- elif name == 'sync' %}<path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5M3 21v-5h5"/>
   {%- elif name == 'upload' %}<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>
+  {%- elif name == 'menu' %}<path d="M4 6h16M4 12h16M4 18h16"/>
+  {%- elif name == 'x' %}<path d="M6 6l12 12M18 6 6 18"/>
   {%- elif name == 'alert' %}<path d="M12 3 2 20h20L12 3z"/><path d="M12 10v5M12 18h.01"/>
   {%- elif name == 'inbox' %}<path d="M3 13 6 5h12l3 8"/><path d="M3 13v6h18v-6h-5l-1 2H9l-1-2H3z"/>
   {%- elif name == 'panel' %}<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>
@@ -18,23 +20,31 @@
   <title>{% block title %}Recce{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script>
-    /* apply the saved sidebar state before first paint, so it does not flash */
+    /* apply the saved sidebar state (desktop) before first paint, so it does not flash */
     (function () {
       var saved = null;
       try { saved = localStorage.getItem("sidebar"); } catch (e) {}
-      if (saved === "collapsed" || (saved === null && window.innerWidth < 760)) {
+      if (saved === "collapsed") {
         document.documentElement.classList.add("collapsed");
       }
     })();
   </script>
 </head>
 <body>
+  <header class="mobile-bar">
+    <button type="button" class="icon-btn" id="menu" title="Menu" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar">
+      {{ icon('menu') }}{% if attention.gaps or attention.review %}<span class="dot"></span>{% endif %}
+    </button>
+    <span class="logo">R</span>
+    <span class="brand">Recce</span>
+  </header>
+  <div class="scrim" id="scrim"></div>
   <div class="shell">
     <aside class="sidebar" id="sidebar">
       <div class="side-top">
         <span class="logo">R</span>
         <span class="brand">Recce</span>
-        <button type="button" class="icon-btn" id="toggle" title="Collapse or expand the menu" aria-label="Collapse or expand the menu">{{ icon('panel') }}</button>
+        <button type="button" class="icon-btn" id="toggle" title="Collapse or expand the menu" aria-label="Collapse or expand the menu"><span class="i-wide">{{ icon('panel') }}</span><span class="i-narrow">{{ icon('x') }}</span></button>
       </div>
 
       <div class="side-label">Overview</div>
@@ -86,10 +96,30 @@
     </main>
   </div>
   <script>
-    document.getElementById("toggle").addEventListener("click", function () {
-      var collapsed = document.documentElement.classList.toggle("collapsed");
-      try { localStorage.setItem("sidebar", collapsed ? "collapsed" : "open"); } catch (e) {}
-    });
+    (function () {
+      var root = document.documentElement;
+      var narrow = window.matchMedia("(max-width: 760px)");
+      var menu = document.getElementById("menu");
+
+      function setOpen(open) {
+        root.classList.toggle("nav-open", open);
+        menu.setAttribute("aria-expanded", open ? "true" : "false");
+      }
+      function toggle() {
+        if (narrow.matches) {            /* phone: slide the menu in or out */
+          setOpen(!root.classList.contains("nav-open"));
+          return;
+        }
+        var collapsed = root.classList.toggle("collapsed");   /* desktop: icon strip */
+        try { localStorage.setItem("sidebar", collapsed ? "collapsed" : "open"); } catch (e) {}
+      }
+
+      document.getElementById("toggle").addEventListener("click", toggle);
+      menu.addEventListener("click", toggle);
+      document.getElementById("scrim").addEventListener("click", function () { setOpen(false); });
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
+      narrow.addEventListener("change", function () { setOpen(false); });
+    })();
   </script>
 </body>
 </html>
