@@ -9,9 +9,9 @@
   {% if rows %}
   <div class="wrap">
     <table id="data">
-      <thead><tr>{% for c in columns %}<th>{{ c.replace('_', ' ').capitalize() }}</th>{% endfor %}</tr></thead>
+      <thead><tr>{% for c in columns %}<th>{{ c.replace('_', ' ').capitalize() }}</th>{% endfor %}{% if edit_ids %}<th></th>{% endif %}</tr></thead>
       <tbody>
-        {% for r in rows %}<tr>{% for v in r %}<td>{{ '' if v is none else v }}</td>{% endfor %}</tr>{% endfor %}
+        {% for r in rows %}<tr>{% for v in r %}<td>{{ '' if v is none or v != v else v }}</td>{% endfor %}{% if edit_ids %}<td><a class="edit" href="{{ url_for('outlet_edit', outlet_id=edit_ids[loop.index0], next=request.path) }}">Edit</a></td>{% endif %}</tr>{% endfor %}
       </tbody>
     </table>
   </div>

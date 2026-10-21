@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Needs attention - Recce{% endblock %}
+{% block content %}
+  <div class="head">
+    <h1>Needs attention</h1>
+    <span class="count">{{ rows|length }} outlet{{ '' if rows|length == 1 else 's' }}</span>
+    {% if rows %}<input id="filter" type="search" placeholder="Filter rows" aria-label="Filter rows">{% endif %}
+  </div>
+  <div class="pills">
+    {% for key, label, n in pills %}
+      <a class="pill {{ 'on' if key == current }}" href="{{ url_for('gaps', missing=key) }}">{{ label }} <b>{{ n }}</b></a>
+    {% endfor %}
+  </div>
+  {% if rows %}
+  <div class="wrap">
+    <table id="data">
+      <thead><tr><th>Outlet</th><th>KE number</th><th>Location</th><th>Channel</th><th>Region</th><th></th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.name }}</td>
+          <td>{% if r.ke_number %}{{ r.ke_number }}{% elif r.miss_ke %}<span class="miss">missing</span>{% else %}<span class="muted">none (THT)</span>{% endif %}</td>
+          <td>{% if r.miss_location %}<span class="miss">missing</span>{% else %}{{ r.physical_loc }}{% endif %}</td>
+          <td>{% if r.miss_channel %}<span class="miss">missing</span>{% else %}{{ r.channel }}{% endif %}</td>
+          <td>{% if r.miss_division %}<span class="miss">missing</span>{% else %}{{ r.division }}{% endif %}</td>
+          <td><a class="edit" href="{{ url_for('outlet_edit', outlet_id=r.id, next=url_for('gaps', missing=current)) }}">Edit</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <script>
+    const f = document.getElementById("filter");
+    f.addEventListener("input", () => {
+      const q = f.value.toLowerCase();
+      document.querySelectorAll("#data tbody tr").forEach(tr => {
+        tr.hidden = !tr.textContent.toLowerCase().includes(q);
+      });
+    });
+  </script>
+  {% else %}
+  <p class="empty">Nothing missing here. Every outlet has this detail.</p>
+  {% endif %}
+{% endblock %}

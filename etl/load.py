@@ -52,6 +52,13 @@ def load_data(engine, transformed_data_dict, auto_create_outlets=True, file_hash
                 )
                 batch_id = batch_res.scalar()
 
+                # Same file imported again: clear its leftover staged rows first,
+                # otherwise rows still waiting for review would be staged twice.
+                conn.execute(
+                    text("DELETE FROM staging_activations WHERE batch_id = :b"),
+                    {"b": batch_id},
+                )
+
                 # 2. Insert rows into staging_activations
                 print(f"Staging {len(rows)} rows for batch ID {batch_id}...")
                 for idx, row in enumerate(rows, start=1):

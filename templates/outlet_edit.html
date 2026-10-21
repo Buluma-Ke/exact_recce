@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ outlet.name }} - Recce{% endblock %}
+{% block content %}
+  <div class="head">
+    <h1>Edit outlet</h1>
+    <a class="muted" href="{{ back }}">Back to list</a>
+  </div>
+  <form method="post" class="form panel">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <input type="hidden" name="next" value="{{ back }}">
+    <div class="field">
+      <label for="name">Outlet name</label>
+      <input id="name" name="name" value="{{ outlet.name }}" required>
+      <div class="hint">If you rename it, the old spelling is remembered so future imports still match this outlet.</div>
+    </div>
+    <div class="field">
+      <label for="ke_number">KE number</label>
+      <input id="ke_number" name="ke_number" value="{{ outlet.ke_number or '' }}" placeholder="KE0123456" autocapitalize="characters" autocomplete="off">
+      <div class="hint">Leave blank if there is none (THT outlets have no KE number).</div>
+    </div>
+    <div class="field">
+      <label for="physical_loc">Physical location</label>
+      <input id="physical_loc" name="physical_loc" value="{{ outlet.physical_loc or '' }}">
+    </div>
+    <div class="field">
+      <label for="channel">Channel</label>
+      <select id="channel" name="channel">
+        <option value="">(not set)</option>
+        {% for c in choices.channels %}<option value="{{ c }}" {{ 'selected' if c == outlet.channel }}>{{ c }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="division">Region</label>
+      <input id="division" name="division" value="{{ outlet.division or '' }}" list="divisions" autocomplete="off">
+      <datalist id="divisions">{% for d in choices.divisions %}<option value="{{ d }}">{% endfor %}</datalist>
+    </div>
+    <div class="actions">
+      <button type="submit" class="button primary">Save changes</button>
+      <a class="button" href="{{ back }}">Cancel</a>
+    </div>
+  </form>
+{% endblock %}

@@ -1,12 +1,14 @@
 import hashlib
 import os
+import secrets
 import threading
 import webbrowser
 from datetime import datetime
 
-from flask import Flask, flash, redirect, render_template, request, url_for, abort
+from flask import Flask, flash, redirect, render_template, request, session, url_for, abort
 from werkzeug.utils import secure_filename
 
+import edits
 import queries
 from connections import get_db_engine
 from dashboard import get_dashboard_data
@@ -17,7 +19,9 @@ from etl.load import load_data
 from etl.transform import transform_data
 
 app = Flask(__name__)
-app.secret_key = "recce-local-only"  # only used to sign flash messages
+# Signs the session cookie (flash messages and the CSRF token). Set RECCE_SECRET_KEY to your own value.
+app.secret_key = os.environ.get("RECCE_SECRET_KEY", "recce-local-only")
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024  # reject uploads over 25 MB
 engine = None
 
@@ -38,6 +42,41 @@ HIDDEN_COLUMNS = {
 }
 
 
+def csrf_token():
+    if "_csrf" not in session:
+        session["_csrf"] = secrets.token_hex(16)
+    return session["_csrf"]
+
+
+app.jinja_env.globals["csrf_token"] = csrf_token
+
+
+@app.before_request
+def check_csrf():
+    """Every POST must carry the token from our own forms, so other websites cannot post for you."""
+    if request.method == "POST":
+        sent = request.form.get("_csrf", "").encode()
+        if not sent or not secrets.compare_digest(sent, session.get("_csrf", "").encode()):
+            flash("Your session expired. Please try again.", "error")
+            return redirect(url_for("dashboard"))
+
+
+@app.context_processor
+def inject_attention():
+    """Counts for the sidebar badges."""
+    if engine is None:
+        return {"attention": {"gaps": 0, "review": 0}}
+    return {"attention": edits.count_attention(engine)}
+
+
+def _safe_next(default):
+    """Where to go after saving. Only local paths are accepted."""
+    nxt = request.form.get("next") or request.args.get("next") or ""
+    if nxt.startswith("/") and not nxt.startswith("//") and "\\" not in nxt:
+        return nxt
+    return default
+
+
 @app.route("/")
 def dashboard():
     return render_template(
@@ -45,15 +84,66 @@ def dashboard():
     )
 
 
+@app.route("/gaps")
+def gaps():
+    current = request.args.get("missing", "all")
+    if current not in edits.GAP_FILTERS:
+        current = "all"
+    rows, counts = edits.get_gaps(engine, current)
+    pills = [("all", "Any gap"), ("ke", "KE number"), ("location", "Location"),
+             ("channel", "Channel"), ("division", "Region")]
+    return render_template("gaps.html", slug=None, reports=REPORTS, rows=rows,
+                           current=current, pills=[(k, label, counts[k]) for k, label in pills])
+
+
+@app.route("/outlets/<int:outlet_id>/edit", methods=["GET", "POST"])
+def outlet_edit(outlet_id):
+    outlet = edits.get_outlet(engine, outlet_id)
+    if not outlet:
+        abort(404)
+    back = _safe_next(url_for("gaps"))
+    if request.method == "POST":
+        ok, message, values = edits.update_outlet(engine, outlet_id, request.form)
+        if ok:
+            flash(message, "ok")
+            return redirect(back)
+        flash(message, "error")
+        outlet = {**outlet, **values}
+    return render_template("outlet_edit.html", slug=None, reports=REPORTS, outlet=outlet,
+                           choices=edits.get_choices(engine, outlet), back=back)
+
+
+@app.route("/review")
+def review():
+    return render_template("review.html", slug=None, reports=REPORTS, rows=edits.get_review(engine))
+
+
+@app.post("/review/<int:review_id>/fix")
+def review_fix(review_id):
+    ok, message = edits.fix_review(engine, review_id, request.form.get("activation_date", ""))
+    flash(message, "ok" if ok else "error")
+    return redirect(url_for("review"))
+
+
+@app.post("/review/<int:review_id>/dismiss")
+def review_dismiss(review_id):
+    ok, message = edits.dismiss_review(engine, review_id)
+    flash(message, "ok" if ok else "error")
+    return redirect(url_for("review"))
+
+
 @app.route("/<slug>")
 def report(slug):
     if slug not in REPORTS:
         abort(404)
     title, fetch, empty_msg = REPORTS[slug]
-    df = fetch(engine).drop(columns=HIDDEN_COLUMNS.get(slug, [])).fillna("")
+    df = fetch(engine)
+    edit_ids = df["outlet_id"].tolist() if slug == "outlets" and "outlet_id" in df.columns else None
+    df = df.drop(columns=HIDDEN_COLUMNS.get(slug, [])).fillna("")
     return render_template(
         "report.html", slug=slug, title=title, empty_msg=empty_msg,
         reports=REPORTS, columns=list(df.columns), rows=df.values.tolist(),
+        edit_ids=edit_ids,
     )
 
 

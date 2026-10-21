@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Review queue - Recce{% endblock %}
+{% block content %}
+  <div class="head">
+    <h1>Review queue</h1>
+    <span class="count">{{ rows|length }} row{{ '' if rows|length == 1 else 's' }}</span>
+  </div>
+  <p class="muted lead">These rows came from your Excel files but have no usable activation date, so they were not saved as activations. Give each one its date and it is imported.</p>
+  {% if rows %}
+  <div class="stack-list">
+    {% for r in rows %}
+    <section class="panel review">
+      <div class="r-info">
+        <strong>{{ r.outlet_name or '(no outlet name)' }}</strong>
+        <span class="sub">{{ r.file_name }} &middot; {{ r.reason }}</span>
+        <span class="sub">
+          {% if r.recce_date %}Recce {{ r.recce_date }}{% endif %}
+          {% if r.tmr_name %} &middot; TMR {{ r.tmr_name }}{% endif %}
+        </span>
+        {% if r.comments %}<span class="sub">{{ r.comments[:140] }}</span>{% endif %}
+      </div>
+      <div class="r-actions">
+        <form method="post" action="{{ url_for('review_fix', review_id=r.review_id) }}" class="inline">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <input type="date" name="activation_date" required aria-label="Activation date">
+          <button type="submit" class="button primary">Save</button>
+        </form>
+        <form method="post" action="{{ url_for('review_dismiss', review_id=r.review_id) }}" class="inline">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button type="submit" class="button" title="Ignore this row">Dismiss</button>
+        </form>
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="empty">Nothing to review. Every imported row has a date.</p>
+  {% endif %}
+{% endblock %}
