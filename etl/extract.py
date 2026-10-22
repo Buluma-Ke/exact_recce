@@ -2,16 +2,28 @@ import glob
 import os
 import pandas as pd
 
+from etl.cleanup import tidy_dataframe
+
 FOLDER_PATH = r"C:\Users\Admin\OneDrive\Documentos\Exact\recce_reports"
 
 
 def _read_excel(filename):
     try:
-        return pd.read_excel(filename)
+        df = pd.read_excel(filename)
     except ValueError:
         # openpyxl rejects some files with a damaged stylesheet;
         # calamine ignores styles, so it can still read the data.
-        return pd.read_excel(filename, engine="calamine")
+        df = pd.read_excel(filename, engine="calamine")
+
+    df = tidy_dataframe(df)
+    basename = os.path.basename(filename)
+    for original, expected in df.attrs["renamed_columns"].items():
+        print(f"  {basename}: column '{original}' read as {expected}")
+    if df.attrs["ignored_columns"]:
+        print(f"  {basename}: columns not used: {', '.join(df.attrs['ignored_columns'])}")
+    if df.attrs["missing_columns"]:
+        print(f"  {basename}: WARNING no column found for: {', '.join(df.attrs['missing_columns'])}")
+    return df
 
 def extract_excel_files():
     """

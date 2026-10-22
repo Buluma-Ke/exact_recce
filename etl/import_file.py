@@ -27,5 +27,9 @@ def import_file(engine, path):
 
     file_hashes = {basename: calculate_file_sha256(path)}
     if load_data(engine, transformed_data, file_hashes=file_hashes):
-        return True, f"Imported {basename}: {row_count} rows processed."
+        message = f"Imported {basename}: {row_count} rows processed."
+        missing = raw_data[basename].attrs.get("missing_columns")
+        if missing:
+            message += f" No column found for: {', '.join(missing)}, so those were left blank."
+        return True, message
     return False, "Import failed and was rolled back. Check the terminal for details."

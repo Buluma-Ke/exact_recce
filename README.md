@@ -9,6 +9,7 @@ excat_experience/
 ├── connections.py          # Database engine initialization (prompts for the password)
 ├── etl/
 │   ├── extract.py          # Reads the Excel files (whole folder, or one file)
+│   ├── cleanup.py          # Maps differently worded Excel headers, strips hidden characters
 │   ├── transform.py        # Cleans staff, dates, times and numbers into row dictionaries
 │   ├── load.py             # Stages rows and calls the database's ingest_batch function
 │   └── import_file.py      # Runs extract, transform and load for ONE file
@@ -150,6 +151,7 @@ Run these from the project root as modules (running the files directly fails wit
 ## Notes on the Excel Data
 
 - Dates arrive in mixed forms: real date cells, text written day-first or month-first, and cells holding several dates. `transform.py` reads all of these, corrects day/month swaps by comparing against the rest of the file, and keeps the latest date when a cell holds more than one. Anything it still cannot read is listed during the run.
+- Column headers differ between files (`KE No.`, `KE Number`, `Physical Location/Closest Landmark`, `Raspberry Price`). `etl/cleanup.py` maps them onto the expected names, prints what it mapped, and warns when a file has no column for something. Hidden characters from copy and paste (such as WhatsApp direction marks) are removed, and `N/A`, `N/a` and similar are treated as empty.
 - Outlets are matched by KE number first (when there is one), then by known aliases, then by name. A KE number that is blank or not in the form `KE` plus digits is treated as no KE number, so placeholder values such as `N/A` or `NAN` cannot merge unrelated outlets.
 - Different versions of the same report are merged: new rows are inserted, changed rows are updated, identical rows are left alone and nothing is deleted. When copies differ, the one loaded last overwrites the others. Files uploaded one at a time are recognised by their contents.
 - Imports only fill blank outlet details and never overwrite existing ones, so edits made in the web UI are kept.
