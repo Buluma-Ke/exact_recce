@@ -74,6 +74,28 @@ def get_dashboard_data(engine):
         WHERE activation_date BETWEEN {TODAY_SQL} - 7 AND {TODAY_SQL}
     """)
 
+    # outlets with an activation dated today (Nairobi time), earliest kick-off first
+    today_list = []
+    for r in _rows(engine, f"""
+        SELECT o.name, o.physical_loc, o.channel, a.kickoff_time,
+               tmr.name AS tmr_name, tmr.phone AS tmr_phone,
+               tl.name  AS tl_name,  tl.phone  AS tl_phone
+        FROM activations a
+        JOIN outlets o ON o.id = a.outlet_id
+        LEFT JOIN staff tmr ON tmr.id = a.tmr_id
+        LEFT JOIN staff tl  ON tl.id  = a.team_lead_id
+        WHERE a.activation_date = {TODAY_SQL}
+        ORDER BY a.kickoff_time NULLS LAST, lower(o.name)
+    """):
+        today_list.append({
+            "name": r.name,
+            "location": r.physical_loc,
+            "channel": _label(r.channel) if r.channel else None,
+            "kickoff": f"{r.kickoff_time:%I:%M %p}".lstrip("0") if r.kickoff_time else None,
+            "tmr_name": r.tmr_name, "tmr_phone": r.tmr_phone,
+            "tl_name": r.tl_name, "tl_phone": r.tl_phone,
+        })
+
     k = {
         "total": total,
         "channels": len(channels),
@@ -84,6 +106,7 @@ def get_dashboard_data(engine):
         "active14_pct": round(100 * active14 / total) if total else 0,
         "inactive": total - active14,
         "never": sum(o["never"] for o in outlets),
+        "today": len(today_list),
         "planned": len(planned),
         "next_date": min(planned).strftime("%d %b") if planned else None,
     }
@@ -128,7 +151,7 @@ def get_dashboard_data(engine):
     review = _rows(engine, "SELECT count(*) FROM import_review")
 
     return {
-        "k": k, "channels": channels, "regions": regions, "weeks": weeks,
+        "k": k, "today_list": today_list, "channels": channels, "regions": regions, "weeks": weeks,
         "tls": tls, "syncs": syncs,
         "review": review[0][0] if review else 0,
         "last_sync": syncs[0]["when"] if syncs else None,

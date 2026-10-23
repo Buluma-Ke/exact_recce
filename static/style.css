@@ -454,6 +454,14 @@ tbody tr:hover {
     display:block;
     overflow-wrap:anywhere;
 }
+.list .sub a {
+    color:var(--accent);
+    text-decoration:none;
+}
+.panel.today {
+    margin-bottom:.75rem;
+    scroll-margin-top:4rem;
+}
 .list .sub {
     display:block;
     color:var(--muted);
