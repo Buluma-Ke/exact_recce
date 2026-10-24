@@ -458,9 +458,37 @@ tbody tr:hover {
     color:var(--accent);
     text-decoration:none;
 }
+.dash {
+    display:grid;
+    grid-template-columns:minmax(0, 1fr);
+    gap:.75rem;
+}
+.dash-main {
+    min-width:0;
+}
+.dash-main > :last-child {
+    margin-bottom:0;
+}
+.dash-side {
+    order:-1;
+}
 .panel.today {
-    margin-bottom:.75rem;
     scroll-margin-top:4rem;
+}
+@media (min-width: 1200px) {
+    .dash {
+        grid-template-columns:minmax(0, 1fr) 360px;
+        align-items:start;
+    }
+    .dash-side {
+        order:0;
+        position:sticky;
+        top:1rem;
+    }
+    .dash-side .panel.today {
+        max-height:calc(100vh - 2rem);
+        overflow-y:auto;
+    }
 }
 .list .sub {
     display:block;
@@ -707,5 +735,18 @@ form.inline input[type="date"] {
     }
     .content {
         padding:.9rem .85rem 2rem;
+    }
+    .stats {
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+        gap:.5rem;
+    }
+    .card {
+        padding:.7rem .8rem;
+    }
+    .card .v {
+        font-size:1.5rem;
+    }
+    .card .s {
+        font-size:11.5px;
     }
 }

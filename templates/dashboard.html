@@ -32,69 +32,74 @@
     <a class="card link" href="{{ url_for('review') }}"><div class="k">Rows needing review</div><div class="v {{ 'warn' if review else '' }}">{{ review }}</div><div class="s">{{ 'no date or unmatched outlet' if review else 'all rows imported' }}</div></a>
   </section>
 
-  <section class="panel today" id="today">
-    <h2>Activating today<span>{{ k.today }} outlet{{ '' if k.today == 1 else 's' }}</span></h2>
-    <ul class="list">
-      {% for t in today_list %}
-      <li>
-        <span>
-          <strong>{{ t.name }}</strong>
-          <span class="sub">{{ t.location or 'no location' }}{% if t.channel %} &middot; {{ t.channel }}{% endif %}</span>
-          {% if t.tmr_name or t.tl_name %}
-          <span class="sub">
-            {% if t.tmr_name %}TMR {% if t.tmr_phone %}<a href="tel:{{ t.tmr_phone }}">{{ t.tmr_name }}</a>{% else %}{{ t.tmr_name }}{% endif %}{% endif %}
-            {% if t.tmr_name and t.tl_name %} &middot; {% endif %}
-            {% if t.tl_name %}TL {% if t.tl_phone %}<a href="tel:{{ t.tl_phone }}">{{ t.tl_name }}</a>{% else %}{{ t.tl_name }}{% endif %}{% endif %}
-          </span>
-          {% endif %}
-        </span>
-        <span class="r">{{ t.kickoff or '' }}</span>
-      </li>
-      {% else %}
-      <li class="muted">No outlets are activating today.</li>
-      {% endfor %}
-    </ul>
-  </section>
+  <div class="dash">
+    <div class="dash-main">
+    <div class="grid2">
+      {{ breakdown('Outlets by channel', channels, 'active = activated in last 2 weeks') }}
+      {{ breakdown('Outlets by region', regions, 'active = activated in last 2 weeks') }}
+    </div>
 
-  <div class="grid2">
-    {{ breakdown('Outlets by channel', channels, 'active = activated in last 2 weeks') }}
-    {{ breakdown('Outlets by region', regions, 'active = activated in last 2 weeks') }}
-  </div>
-
-  <div class="grid3">
-    <section class="panel">
-      <h2>Activations per week<span>last 8 weeks</span></h2>
-      <div class="weeks">
-        {% for w in weeks %}
-        <div class="week" title="{{ w.count }} activations, week of {{ w.label }}">
-          <span class="n">{{ w.count }}</span>
-          <div class="bar" style="height: {{ w.pct }}%"></div>
-          <span class="d">{{ w.label }}</span>
+    <div class="grid3">
+      <section class="panel">
+        <h2>Activations per week<span>last 8 weeks</span></h2>
+        <div class="weeks">
+          {% for w in weeks %}
+          <div class="week" title="{{ w.count }} activations, week of {{ w.label }}">
+            <span class="n">{{ w.count }}</span>
+            <div class="bar" style="height: {{ w.pct }}%"></div>
+            <span class="d">{{ w.label }}</span>
+          </div>
+          {% endfor %}
         </div>
-        {% endfor %}
-      </div>
-    </section>
+      </section>
 
-    <section class="panel">
-      <h2>Top team leads<span>last 30 days</span></h2>
+      <section class="panel">
+        <h2>Top team leads<span>last 30 days</span></h2>
+        <ul class="list">
+          {% for t in tls %}
+          <li><span>{{ t.name }}<span class="sub">{{ t.outlets }} outlet{{ '' if t.outlets == 1 else 's' }}</span></span><span class="r">{{ t.n }} activation{{ '' if t.n == 1 else 's' }}</span></li>
+          {% else %}
+          <li class="muted">No activations in the last 30 days.</li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      <section class="panel">
+        <h2>Recent imports</h2>
+        <ul class="list">
+          {% for s in syncs %}
+          <li class="stack"><span class="name">{{ s.file }}</span><span class="sub">{{ s.when }} &middot; {{ s.ins }} new, {{ s.upd }} updated</span></li>
+          {% else %}
+          <li class="muted">Nothing imported yet.</li>
+          {% endfor %}
+        </ul>
+      </section>
+    </div>
+    </div>
+    <aside class="dash-side">
+    <section class="panel today" id="today">
+      <h2>Activating today<span>{{ k.today }} outlet{{ '' if k.today == 1 else 's' }}</span></h2>
       <ul class="list">
-        {% for t in tls %}
-        <li><span>{{ t.name }}<span class="sub">{{ t.outlets }} outlet{{ '' if t.outlets == 1 else 's' }}</span></span><span class="r">{{ t.n }} activation{{ '' if t.n == 1 else 's' }}</span></li>
+        {% for t in today_list %}
+        <li>
+          <span>
+            <strong>{{ t.name }}</strong>
+            <span class="sub">{{ t.location or 'no location' }}{% if t.channel %} &middot; {{ t.channel }}{% endif %}</span>
+            {% if t.tmr_name or t.tl_name %}
+            <span class="sub">
+              {% if t.tmr_name %}TMR {% if t.tmr_phone %}<a href="tel:{{ t.tmr_phone }}">{{ t.tmr_name }}</a>{% else %}{{ t.tmr_name }}{% endif %}{% endif %}
+              {% if t.tmr_name and t.tl_name %} &middot; {% endif %}
+              {% if t.tl_name %}TL {% if t.tl_phone %}<a href="tel:{{ t.tl_phone }}">{{ t.tl_name }}</a>{% else %}{{ t.tl_name }}{% endif %}{% endif %}
+            </span>
+            {% endif %}
+          </span>
+          <span class="r">{{ t.kickoff or '' }}</span>
+        </li>
         {% else %}
-        <li class="muted">No activations in the last 30 days.</li>
+        <li class="muted">No outlets are activating today.</li>
         {% endfor %}
       </ul>
     </section>
-
-    <section class="panel">
-      <h2>Recent imports</h2>
-      <ul class="list">
-        {% for s in syncs %}
-        <li class="stack"><span class="name">{{ s.file }}</span><span class="sub">{{ s.when }} &middot; {{ s.ins }} new, {{ s.upd }} updated</span></li>
-        {% else %}
-        <li class="muted">Nothing imported yet.</li>
-        {% endfor %}
-      </ul>
-    </section>
+    </aside>
   </div>
 {% endblock %}
