@@ -826,7 +826,7 @@ form.inline input[type="date"] {
     }
     .dashboard-page .dash-main {
         display:grid;
-        grid-template-rows:auto minmax(0, 1fr);
+        grid-template-rows:minmax(min-content, 4fr) minmax(0, 5fr);
         gap:.6rem;
         min-height:0;
     }
@@ -852,11 +852,25 @@ form.inline input[type="date"] {
         flex:1;
         display:flex;
         flex-direction:column;
-        justify-content:space-between;
-        gap:.5rem;
+        min-height:0;
     }
     .dashboard-page .brow {
+        flex:1;
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
         margin-bottom:0;
+        border-bottom:1px solid var(--line-soft);
+    }
+    .dashboard-page .brow:last-child {
+        border-bottom:0;
+    }
+    .dashboard-page .brow .top {
+        margin-bottom:.4rem;
+        font-size:13.5px;
+    }
+    .dashboard-page .track {
+        height:9px;
     }
     .dashboard-page .weeks {
         flex:1;
@@ -886,12 +900,22 @@ form.inline input[type="date"] {
     }
 }
 
-/* shorter windows: keep the fit-to-screen layout by trimming the lists */
+/* shorter windows: keep the fit-to-screen layout by showing fewer list entries */
+@media (min-width: 1500px) and (min-height: 700px) and (max-height: 1039px) {
+    .dashboard-page .dash-main .list li:nth-child(n+8) {
+        display:none;
+    }
+}
 @media (min-width: 1500px) and (min-height: 700px) and (max-height: 920px) {
-    .dashboard-page .dash-main .list li:nth-child(n+4) {
+    .dashboard-page .dash-main .list li:nth-child(n+6) {
         display:none;
     }
     .dashboard-page .card .s {
+        display:none;
+    }
+}
+@media (min-width: 1500px) and (min-height: 700px) and (max-height: 760px) {
+    .dashboard-page .dash-main .list li:nth-child(n+5) {
         display:none;
     }
 }
