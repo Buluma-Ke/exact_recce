@@ -135,7 +135,7 @@ def get_dashboard_data(engine):
             FROM activations a JOIN staff s ON s.id = a.team_lead_id
             WHERE a.activation_date BETWEEN {TODAY_SQL} - 30 AND {TODAY_SQL}
               AND lower(s.name) <> 'none'
-            GROUP BY s.id, s.name ORDER BY n DESC, s.name LIMIT 5
+            GROUP BY s.id, s.name ORDER BY n DESC, s.name LIMIT 8
         """)
     ]
 
@@ -144,7 +144,7 @@ def get_dashboard_data(engine):
          "ins": r.rows_inserted, "upd": r.rows_updated}
         for r in _rows(engine, """
             SELECT file_name, imported_at, rows_inserted, rows_updated
-            FROM import_batches ORDER BY imported_at DESC LIMIT 5
+            FROM import_batches ORDER BY imported_at DESC LIMIT 8
         """)
     ]
 

@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - Recce{% endblock %}
+{% block bodyclass %}dashboard-page{% endblock %}
 
 {% macro breakdown(title, items, note) %}
   <section class="panel">
     <h2>{{ title }}<span>{{ note }}</span></h2>
+    <div class="bars">
     {% for it in items %}
       <div class="brow">
         <div class="top"><span>{{ it.name }}</span><em>{{ it.active }} active / {{ it.total }} outlets</em></div>
@@ -12,6 +14,7 @@
     {% else %}
       <p class="muted">No data yet.</p>
     {% endfor %}
+    </div>
   </section>
 {% endmacro %}
 
