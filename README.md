@@ -68,7 +68,7 @@ excat_experience/
 ## Configuration
 
 - **Database:** `connections.py` connects to `exact_recce` on `localhost:5432` as user `Admin`. The password is requested in the terminal each time the app starts.
-- **Reports folder:** set `FOLDER_PATH` in `etl/extract.py` to the folder that holds the weekly Excel reports. Single files uploaded in the web UI are also saved there.
+- **Reports folder:** the default folder is `FOLDER_PATH` in `etl/extract.py`, or the `RECCE_REPORTS_DIR` environment variable if you set it. Copies of files imported through the web UI are saved there, and the command-line menu offers it as its default folder. The web UI does not read from it directly: you choose the folder to import in the browser.
 - **Session key (optional):** the web UI signs its session cookie with the `RECCE_SECRET_KEY` environment variable. If it is not set, a built-in default is used, which is fine on your own PC.
 
 ## How to Run
@@ -95,7 +95,7 @@ Or double-click `start_recce.bat`. After you enter the password the app opens in
 **Importing data**
 
 - **Upload report**: add one Excel file. A copy is saved in the reports folder, and files that are not valid recce reports are rejected.
-- **Sync folder**: import every Excel file in the reports folder, for when you have several to add.
+- **Import folder**: choose any folder on the device you are using (for example the PC, or a phone that lets you pick several files) and every `.xlsx` directly inside it is imported, oldest file first so that when versions of a report disagree the most recently edited one wins. Files in subfolders, Excel's temporary `~$` files and other file types are skipped. The results are summarised on the dashboard, with the files that could not be imported listed.
 
 **Editing**
 
@@ -110,7 +110,7 @@ Editing existing activations (dates, staff, stock) is not available yet.
 .\.venv\Scripts\python.exe app.py
 ```
 
-1. Sync / ingest all Excel reports in the folder and view all outlets
+1. Import all Excel reports in a folder and view all outlets (asks for the folder; press Enter for the default)
 2. Add a single Excel report file (asks for the file path; you can drag the file into the window)
 3. View outlets activated in the last 2 weeks
 4. View outlets inactive for 2 weeks or more

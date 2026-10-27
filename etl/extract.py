@@ -4,7 +4,11 @@ import pandas as pd
 
 from etl.cleanup import tidy_dataframe
 
-FOLDER_PATH = r"C:\Users\Admin\OneDrive\Documentos\Exact\recce_reports"
+# Default reports folder: used for archived copies of uploaded files and as the CLI's default folder.
+# Set the RECCE_REPORTS_DIR environment variable to use another folder without editing code.
+FOLDER_PATH = os.environ.get(
+    "RECCE_REPORTS_DIR", r"C:\Users\Admin\OneDrive\Documentos\Exact\recce_reports"
+)
 
 
 def _read_excel(filename):
@@ -25,13 +29,20 @@ def _read_excel(filename):
         print(f"  {basename}: WARNING no column found for: {', '.join(df.attrs['missing_columns'])}")
     return df
 
-def extract_excel_files():
+def extract_excel_files(folder=None):
     """
-    Scan the recce reports directory and read all Excel files into raw DataFrames.
+    Scan a folder (default: FOLDER_PATH) and read all Excel files into raw DataFrames.
+    Files are read oldest first, so when versions of the same report disagree the most
+    recently edited file is loaded last and wins. Excel's temporary "~$" lock files are skipped.
     Returns a dictionary mapping filename to raw pandas DataFrame.
     """
-    print("\n--- Scanning and Extracting Excel Files ---")
-    all_files = glob.glob(os.path.join(FOLDER_PATH, "*.xlsx"))
+    folder = folder or FOLDER_PATH
+    print(f"\n--- Scanning and Extracting Excel Files in {folder} ---")
+    all_files = [
+        f for f in glob.glob(os.path.join(folder, "*.xlsx"))
+        if not os.path.basename(f).startswith("~$")
+    ]
+    all_files.sort(key=os.path.getmtime)
 
     if not all_files:
         print("No Excel files found in the specified directory.")

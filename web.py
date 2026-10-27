@@ -14,7 +14,7 @@ import logistics
 import queries
 from connections import get_db_engine
 from dashboard import get_dashboard_data
-from etl.extract import FOLDER_PATH, extract_excel_files
+from etl.extract import FOLDER_PATH
 from etl.import_file import import_file
 from etl.load import calculate_file_sha256
 from etl.load import load_data
@@ -24,7 +24,8 @@ app = Flask(__name__)
 # Signs the session cookie (flash messages and the CSRF token). Set RECCE_SECRET_KEY to your own value.
 app.secret_key = os.environ.get("RECCE_SECRET_KEY", "recce-local-only")
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024  # reject uploads over 25 MB
+app.config["MAX_CONTENT_LENGTH"] = 300 * 1024 * 1024  # a whole folder of reports can be uploaded at once
+app.config["MAX_FORM_PARTS"] = 5000
 engine = None
 
 REPORTS = {
@@ -171,16 +172,34 @@ def report(slug):
     )
 
 
-@app.post("/sync")
-def sync():
-    raw = extract_excel_files()
-    if not raw:
-        flash("No Excel files found in the reports folder.", "error")
-    elif load_data(engine, transform_data(raw)):
-        flash(f"Sync complete: {len(raw)} file(s) processed.", "ok")
-    else:
-        flash("Sync failed and was rolled back. Check the terminal for details.", "error")
-    return redirect(url_for("dashboard"))
+def _archive_copy(data, filename):
+    """Keep a copy of an uploaded file in the reports folder. Returns (path, is_new_copy)."""
+    os.makedirs(FOLDER_PATH, exist_ok=True)
+    name = secure_filename(filename) or "upload.xlsx"
+    path = os.path.join(FOLDER_PATH, name)
+    # same name but different contents: keep both, never overwrite
+    if os.path.exists(path) and calculate_file_sha256(path) != hashlib.sha256(data).hexdigest():
+        stem, ext = os.path.splitext(name)
+        path = os.path.join(FOLDER_PATH, f"{stem}_{datetime.now():%Y%m%d-%H%M%S}{ext}")
+    is_new_copy = not os.path.exists(path)
+    if is_new_copy:
+        with open(path, "wb") as out:
+            out.write(data)
+    return path, is_new_copy
+
+
+def _import_upload(file_storage):
+    """Archive one uploaded file and import it. Returns (ok, message)."""
+    # a folder upload sends 'folder/file.xlsx'; keep only the file name
+    name = os.path.basename((file_storage.filename or "").replace("\\", "/"))
+    path, is_new_copy = _archive_copy(file_storage.read(), name)
+    ok, message = import_file(engine, path)
+    if not ok and is_new_copy:
+        try:
+            os.remove(path)  # do not leave a bad file behind
+        except OSError:
+            pass
+    return ok, message
 
 
 @app.post("/upload")
@@ -192,25 +211,42 @@ def upload():
     elif not f.filename.lower().endswith(".xlsx"):
         flash("Please choose an Excel (.xlsx) file.", "error")
     else:
-        os.makedirs(FOLDER_PATH, exist_ok=True)
-        data = f.read()
-        name = secure_filename(f.filename) or "upload.xlsx"
-        path = os.path.join(FOLDER_PATH, name)
-        # same name but different contents: keep both, never overwrite
-        if os.path.exists(path) and calculate_file_sha256(path) != hashlib.sha256(data).hexdigest():
-            stem, ext = os.path.splitext(name)
-            path = os.path.join(FOLDER_PATH, f"{stem}_{datetime.now():%Y%m%d-%H%M%S}{ext}")
-        is_new_copy = not os.path.exists(path)
-        if is_new_copy:
-            with open(path, "wb") as out:
-                out.write(data)
-        ok, message = import_file(engine, path)
-        if not ok and is_new_copy:
-            try:
-                os.remove(path)  # do not leave a bad file for the folder sync to trip over
-            except OSError:
-                pass
+        ok, message = _import_upload(f)
         flash(message, "ok" if ok else "error")
+    return redirect(url_for("dashboard"))
+
+
+@app.post("/import")
+def import_folder():
+    """Import every .xlsx the browser sent from a chosen folder (or several chosen files).
+    Only files directly in the folder are used, not those in its subfolders."""
+    imported, failed, ignored, missing_cols = 0, [], 0, 0
+    for f in request.files.getlist("files"):
+        parts = (f.filename or "").replace("\\", "/").split("/")
+        name = parts[-1]
+        if len(parts) > 2 or not name.lower().endswith(".xlsx") or name.startswith("~$"):
+            ignored += 1
+            continue
+        ok, message = _import_upload(f)
+        if ok:
+            imported += 1
+            missing_cols += "No column found for" in message
+        else:
+            failed.append(f"{name}: {message}")
+
+    total = imported + len(failed)
+    if not total:
+        flash("No Excel (.xlsx) files found in that selection.", "error")
+        return redirect(url_for("dashboard"))
+    summary = f"Imported {imported} of {total} Excel file{'' if total == 1 else 's'}."
+    if ignored:
+        summary += f" Ignored {ignored} other file{'' if ignored == 1 else 's'}."
+    if missing_cols:
+        summary += f" {missing_cols} had columns that were not found (see the terminal for details)."
+    flash(summary, "ok" if imported else "error")
+    if failed:
+        shown = "; ".join(failed[:4]) + (f"; and {len(failed) - 4} more" if len(failed) > 4 else "")
+        flash(f"Not imported: {shown}", "error")
     return redirect(url_for("dashboard"))
 
 
