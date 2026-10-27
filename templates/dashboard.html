@@ -30,7 +30,7 @@
     <div class="card"><div class="k">Activated, last 7 days</div><div class="v">{{ k.active7 }}</div><div class="s">{{ k.acts7 }} activation{{ '' if k.acts7 == 1 else 's' }}</div></div>
     <div class="card"><div class="k">Activated, last 2 weeks</div><div class="v">{{ k.active14 }}</div><div class="s">{{ k.active14_pct }}% of all outlets</div></div>
     <div class="card"><div class="k">Inactive 2 weeks or more</div><div class="v warn">{{ k.inactive }}</div><div class="s">{{ k.never }} never activated</div></div>
-    <div class="card"><div class="k">Planned ahead</div><div class="v">{{ k.planned }}</div><div class="s">{% if k.next_date %}next on {{ k.next_date }}{% else %}nothing scheduled{% endif %}</div></div>
+    <a class="card link" href="{{ url_for('logistics_guide') }}"><div class="k">Logistics guide</div><div class="v">{{ k.week_outlets }}</div><div class="s">outlets this week, {{ k.week_label }}</div></a>
     <a class="card link" href="{{ url_for('gaps') }}"><div class="k">Outlets with missing details</div><div class="v {{ 'warn' if attention.gaps else '' }}">{{ attention.gaps }}</div><div class="s">{{ 'KE number, location, channel or region' if attention.gaps else 'nothing missing' }}</div></a>
     <a class="card link" href="{{ url_for('review') }}"><div class="k">Rows needing review</div><div class="v {{ 'warn' if review else '' }}">{{ review }}</div><div class="s">{{ 'no date or unmatched outlet' if review else 'all rows imported' }}</div></a>
   </section>

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Logistics guide - Recce{% endblock %}
+{% block content %}
+  <div class="head">
+    <h1>Logistics guide</h1>
+    <span class="count" id="count" data-unit="outlets">{{ g.rows|length }} outlets</span>
+    <div class="filters">
+      {% if g.rows %}
+      <select class="col-filter" required data-col="4" aria-label="Filter by channel"><option value="">All channels</option></select>
+      <select class="col-filter" required data-col="3" aria-label="Filter by division"><option value="">All divisions</option></select>
+      <input id="filter" type="search" placeholder="Filter rows" aria-label="Filter rows">
+      <a class="button primary" href="{{ url_for('logistics_download', week=g.start.isoformat()) }}">Download .xlsx</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="weeknav">
+    <a class="button" href="{{ url_for('logistics_guide', week=g.prev) }}" aria-label="Previous week" title="Previous week">&lsaquo;</a>
+    <strong>{{ g.label }}</strong>
+    <a class="button" href="{{ url_for('logistics_guide', week=g.next) }}" aria-label="Next week" title="Next week">&rsaquo;</a>
+    {% if not g.current %}<a class="button" href="{{ url_for('logistics_guide') }}">This week</a>{% else %}<span class="muted">this week</span>{% endif %}
+  </div>
+
+  {% if g.rows %}
+  <div class="wrap">
+    <table id="data">
+      <thead><tr><th>#</th><th>Outlet name</th><th>Physical location</th><th>Division</th><th>Channel</th><th>Kick-off time</th><th>Date of activation</th><th>Team lead name &amp; tel</th><th>KDM name &amp; tel</th></tr></thead>
+      <tbody>
+        {% for r in g.rows %}
+        <tr><td>{{ r.n }}</td><td>{{ r.name }}</td><td>{{ r.location }}</td><td>{{ r.division }}</td><td>{{ r.channel }}</td><td>{{ r.kickoff }}</td><td>{{ r.dates }}</td><td>{{ r.tl }}</td><td>{{ r.kdm }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "_table_filter.html" %}
+  {% else %}
+  <p class="empty">No outlets are activating in this week. Use the arrows to look at another week.</p>
+  {% endif %}
+{% endblock %}

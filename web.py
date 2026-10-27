@@ -1,14 +1,16 @@
 import hashlib
+import io
 import os
 import secrets
 import threading
 import webbrowser
 from datetime import datetime
 
-from flask import Flask, flash, redirect, render_template, request, session, url_for, abort
+from flask import Flask, abort, flash, redirect, render_template, request, send_file, session, url_for
 from werkzeug.utils import secure_filename
 
 import edits
+import logistics
 import queries
 from connections import get_db_engine
 from dashboard import get_dashboard_data
@@ -84,6 +86,25 @@ def _safe_next(default):
 def dashboard():
     return render_template(
         "dashboard.html", slug=None, reports=REPORTS, **get_dashboard_data(engine)
+    )
+
+
+@app.route("/logistics")
+def logistics_guide():
+    guide = logistics.get_guide(engine, request.args.get("week"))
+    return render_template("logistics.html", slug=None, reports=REPORTS, g=guide)
+
+
+@app.get("/logistics/download")
+def logistics_download():
+    guide = logistics.get_guide(engine, request.args.get("week"))
+    if not guide["rows"]:
+        flash("No outlets are activating in that week, so there is nothing to download.", "error")
+        return redirect(url_for("logistics_guide", week=guide["start"].isoformat()))
+    name = f"Logistics_Guide_{guide['start']:%Y-%m-%d}_to_{guide['end']:%Y-%m-%d}.xlsx"
+    return send_file(
+        io.BytesIO(logistics.build_xlsx(guide)), as_attachment=True, download_name=name,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 

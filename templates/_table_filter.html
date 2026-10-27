@@ -1,0 +1,53 @@
+  <script>
+    (function () {
+      const rows = Array.from(document.querySelectorAll("#data tbody tr"));
+      const total = rows.length;
+      const text = document.getElementById("filter");
+      const count = document.getElementById("count");
+      const selects = Array.from(document.querySelectorAll("select.col-filter"));
+      const KNOWN = { ontrade: "Ontrade", offtrade: "Offtrade", tht: "THT" };
+
+      // 'Off trade', 'offtrade' and 'OFFTRADE ' are the same value
+      const norm = s => s.replace(/\s+/g, "").toLowerCase();
+      const label = s => {
+        const k = norm(s);
+        if (KNOWN[k]) return KNOWN[k];
+        return s.trim().replace(/\s+/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+      };
+
+      selects.forEach(sel => {
+        const col = Number(sel.dataset.col);
+        const seen = new Map();
+        rows.forEach(tr => {
+          const v = tr.cells[col].textContent.trim();
+          if (v && !seen.has(norm(v))) seen.set(norm(v), label(v));
+        });
+        Array.from(seen.entries())
+          .sort((a, b) => a[1].localeCompare(b[1]))
+          .forEach(([key, name]) => {
+            const o = document.createElement("option");
+            o.value = key;
+            o.textContent = name;
+            sel.appendChild(o);
+          });
+      });
+
+      function apply() {
+        const q = text.value.toLowerCase();
+        let shown = 0;
+        rows.forEach(tr => {
+          let ok = tr.textContent.toLowerCase().includes(q);
+          selects.forEach(sel => {
+            if (ok && sel.value) ok = norm(tr.cells[Number(sel.dataset.col)].textContent) === sel.value;
+          });
+          tr.hidden = !ok;
+          if (ok) shown++;
+        });
+        const unit = count.dataset.unit || "records";
+        count.textContent = shown === total ? total + " " + unit : shown + " of " + total + " " + unit;
+      }
+
+      text.addEventListener("input", apply);
+      selects.forEach(sel => sel.addEventListener("change", apply));
+    })();
+  </script>

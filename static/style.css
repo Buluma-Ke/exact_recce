@@ -919,3 +919,18 @@ form.inline input[type="date"] {
         display:none;
     }
 }
+
+/* ---------- logistics guide ---------- */
+.weeknav {
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:.6rem;
+    margin-bottom:1rem;
+}
+.weeknav .button {
+    padding:.3rem .75rem;
+}
+.filters .button {
+    white-space:nowrap;
+}

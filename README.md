@@ -16,6 +16,7 @@ excat_experience/
 ├── queries.py              # Report queries; each returns a DataFrame, plus CLI print helpers
 ├── dashboard.py            # Numbers for the dashboard home page
 ├── edits.py                # Editing outlets and the review queue
+├── logistics.py            # Weekly logistics guide and its Excel export
 ├── app.py                  # Command-line menu
 ├── web.py                  # Web UI (Flask)
 ├── start_recce.bat         # Double-click launcher for the web UI
@@ -85,6 +86,7 @@ Or double-click `start_recce.bat`. After you enter the password the app opens in
 **Pages**
 
 - **Dashboard**: outlet totals, activations in the last 7 days and 2 weeks, inactive and never-activated outlets, planned activations, breakdowns by channel and region, activations per week, top team leads, and recent imports
+- **Logistics guide**: the outlets activating in a Monday to Sunday week, with kick-off time, dates, team lead and KDM contacts. Use the arrows to change week and **Download .xlsx** to get it as an Excel file formatted like the hand-made guide (without the Elements column). The dashboard's *Logistics guide* card opens this page.
 - **Needs attention**: outlets with a missing KE number, location, channel or region (THT outlets are not expected to have a KE number)
 - **Review queue**: rows from the Excel files that have no usable activation date
 - **All outlets**, **Activated in the last 2 weeks**, **Inactive for 2 weeks or more**: with channel and division drop-down filters and a text filter. The *Activated* and *Inactive* reports cover Nairobi outlets only, as defined in `sql/views.sql`

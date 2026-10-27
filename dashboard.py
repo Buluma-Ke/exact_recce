@@ -2,6 +2,8 @@
 
 from sqlalchemy import text
 
+import logistics
+
 TODAY_SQL = "(now() AT TIME ZONE 'Africa/Nairobi')::date"
 
 
@@ -67,7 +69,6 @@ def get_dashboard_data(engine):
     channels = _breakdown(outlets, "channel")
     regions = _breakdown(outlets, "division")
     active14 = sum(o["active14"] for o in outlets)
-    planned = [o["next_act"] for o in outlets if o["next_act"]]
 
     acts7 = _rows(engine, f"""
         SELECT count(*) FROM activations
@@ -96,6 +97,8 @@ def get_dashboard_data(engine):
             "tl_name": r.tl_name, "tl_phone": r.tl_phone,
         })
 
+    week = logistics.week_summary(engine)
+
     k = {
         "total": total,
         "channels": len(channels),
@@ -107,8 +110,8 @@ def get_dashboard_data(engine):
         "inactive": total - active14,
         "never": sum(o["never"] for o in outlets),
         "today": len(today_list),
-        "planned": len(planned),
-        "next_date": min(planned).strftime("%d %b") if planned else None,
+        "week_outlets": week["count"],
+        "week_label": week["label"],
     }
 
     # activations per week, last 8 weeks (Monday start), zero weeks included
